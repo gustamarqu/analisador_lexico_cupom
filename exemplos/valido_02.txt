@@ -1,0 +1,6 @@
+ITEM: "Notebook Lenovo"
+QTD: 1
+UN: "UN"
+VL: R$ 3.499,90
+CPF: 123.456.789-09
+DATA: 10/09/2026

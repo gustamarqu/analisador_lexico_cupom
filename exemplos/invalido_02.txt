@@ -1,0 +1,1 @@
+ITEM: "Notebook" QTD: 1 $ VL: R$ 2.500,00

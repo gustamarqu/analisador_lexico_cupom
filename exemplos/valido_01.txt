@@ -1,0 +1,6 @@
+ITEM: "Arroz 5kg"
+QTD: 2
+UN: "UN"
+VL: R$ 27,90
+CNPJ: 12.345.678/0001-90
+DATA: 28/07/2026

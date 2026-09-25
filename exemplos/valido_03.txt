@@ -1,0 +1,7 @@
+# Cupom de supermercado
+ITEM: "Café 500g"
+QTD: 3
+UN: "UN"
+VL: R$ 18,50
+CNPJ: 98.765.432/0001-10
+DATA: 15/09/2026

@@ -1,0 +1,142 @@
+// ============================================================
+// Gramática Léxica — Cupom Fiscal Eletrônico
+// Analisador Léxico com Lark
+// ============================================================
+//
+// Conceitos explicitamente demonstrados neste arquivo:
+//
+//   1. TOKEN por STRING LITERAL  → COLON: ":"  COMMA: ","  etc.
+//   2. TOKEN por EXPRESSÃO REGULAR → CNPJ, CPF, DATE, MONEY, etc.
+//   3. Flag /i (case-insensitive) → palavras reservadas
+//   4. Fronteira \b               → impede match parcial em palavras
+//   5. Prioridade TOKEN.N         → resolve conflito reservada × ID
+//   6. %import common.WS         → importa definição de espaço
+//   7. %ignore WS                → ignora espaços entre tokens
+//   8. %ignore comentários       → ignora tudo após #
+// ============================================================
+
+
+// ============================================================
+// REGRA INICIAL
+// Obrigatória no Lark. Aceita qualquer sequência de tokens.
+// A tokenização real usa lark.lex() que percorre os terminais.
+// ============================================================
+start: _tok*
+
+_tok: KW_ITEM | KW_QTD | KW_UN | KW_VL | KW_DATA
+    | KW_TOTAL | KW_SUBTOTAL | KW_DESCONTO
+    | CNPJ | CPF | DATE | MONEY
+    | STRING | DECIMAL | INTEGER
+    | ID
+    | COLON | COMMA | LPAREN | RPAREN
+    | SEMICOLON | EQUALS | PERCENT | ASTERISK
+
+
+// ============================================================
+// PALAVRAS RESERVADAS — prioridade .2, flag /i, fronteira \b
+//
+// CONFLITO DE PRIORIDADE resolvido aqui:
+//   Problema: ID tem regex [A-Za-z_][A-Za-z0-9_]* que casaria
+//             com "ITEM", "QTD", etc. antes das palavras reservadas.
+//   Solução:  Prioridade .2 > .0 (padrão do ID).
+//             Quando duas regras casam no mesmo trecho, o Lark
+//             escolhe a de maior prioridade.
+//
+// Flag /i (case-insensitive):
+//   Internamente o Lark converte /ITEM\b/i para (?i:ITEM\b),
+//   que é uma flag localizada no grupo — compatível com Python 3.6+.
+//   Aceita: ITEM, item, Item, ItEm → todos reconhecidos como KW_ITEM.
+//
+// Fronteira \b (word boundary):
+//   \b exige que o char APÓS a palavra não seja [A-Za-z0-9_].
+//   Portanto "ITEMIZADO" NÃO casa com KW_ITEM — é reconhecido como ID.
+// ============================================================
+KW_ITEM.2:     /ITEM\b/i
+KW_QTD.2:      /QTD\b/i
+KW_UN.2:       /UN\b/i
+KW_VL.2:       /VL\b/i
+KW_DATA.2:     /DATA\b/i
+KW_TOTAL.2:    /TOTAL\b/i
+KW_SUBTOTAL.2: /SUBTOTAL\b/i
+KW_DESCONTO.2: /DESCONTO\b/i
+
+
+// ============================================================
+// TOKENS ESPECÍFICOS DO DOMÍNIO — prioridade .3, por regex
+//
+// Prioridade .3 garante reconhecimento antes de INTEGER e DECIMAL.
+//
+// CNPJ vs CPF vs DATE — padrões distintos, sem ambiguidade:
+//   CNPJ: tem barra  /  obrigatória  → XX.XXX.XXX/XXXX-XX
+//   CPF:  tem traço  -  sem barra    → XXX.XXX.XXX-XX
+//   DATE: dois barras, sem pontos    → DD/MM/AAAA
+//
+// MONEY: começa com "R$" — único no domínio.
+//   O \s* dentro da regex captura o espaço entre "R$" e o número
+//   como parte do token (não via %ignore, que age entre tokens).
+// ============================================================
+
+// CNPJ: formato XX.XXX.XXX/XXXX-XX
+CNPJ.3:  /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/
+
+// CPF: formato XXX.XXX.XXX-XX
+CPF.3:   /\d{3}\.\d{3}\.\d{3}-\d{2}/
+
+// DATE: formato DD/MM/AAAA
+// Alta prioridade evita que "28/07/2026" vire INTEGER/INTEGER/INTEGER
+DATE.3:  /\d{2}\/\d{2}\/\d{4}/
+
+// MONEY: R$ X,XX  ou  R$ X.XXX,XX (separador de milhar opcional)
+// Alta prioridade evita fragmentação em ID + erro + INTEGER + COMMA...
+MONEY.3: /R\$\s*\d{1,3}(?:\.\d{3})*,\d{2}/
+
+
+// ============================================================
+// TOKENS GENÉRICOS — definidos por expressão regular
+// ============================================================
+
+// STRING: texto entre aspas duplas (pode conter espaços internos)
+STRING:    /"[^"]*"/
+
+// DECIMAL: número com parte decimal — prioridade .1 sobre INTEGER
+// Garante que "10.50" vire DECIMAL e não INTEGER("10") + ".50"
+DECIMAL.1: /\d+\.\d+/
+
+// INTEGER: número inteiro positivo
+INTEGER:   /\d+/
+
+// ID: identificador genérico — prioridade padrão .0
+// Menor prioridade que palavras reservadas (.2)
+ID:        /[A-Za-z_][A-Za-z0-9_]*/
+
+
+// ============================================================
+// SÍMBOLOS — definidos por STRING LITERAL (não por regex)
+//
+// Demonstra a diferença entre token por literal e por regex:
+//   Literal: COLON: ":"  → o token é exatamente o caractere ":"
+//   Regex:   ID: /[A-Za-z_].../ → o token é qualquer sequência
+//            que case com o padrão
+// ============================================================
+COLON:     ":"
+COMMA:     ","
+LPAREN:    "("
+RPAREN:    ")"
+SEMICOLON: ";"
+EQUALS:    "="
+PERCENT:   "%"
+ASTERISK:  "*"
+
+
+// ============================================================
+// TOKENS IGNORADOS
+//
+// %import common.WS  → importa WS (/\s+/) da biblioteca Lark
+// %ignore WS         → descarta espaços, tabs e quebras de linha
+//                      entre tokens (não geram token na saída)
+//
+// Comentários: tudo após # até o fim da linha é descartado.
+// ============================================================
+%import common.WS
+%ignore WS
+%ignore /#[^\n]*/
