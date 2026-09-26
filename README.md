@@ -2,12 +2,79 @@
 ## Cupom Fiscal Eletrônico
 
 **Autores:**
-- Isaac Takebayashi
-- Gustavo Marques
-- Harry Daniel
-- Wellington Junior
+| RA | Nome |
+|---|---|
+| 2679538 | Isaac Takebayashi |
+| 2682519 | Gustavo Marques |
+| 2891394 | Harry Daniel |
+| 2420944 | Wellington Junior |
 
 Projeto acadêmico de Compiladores — implementação de um **analisador léxico** para o domínio de Cupom Fiscal Eletrônico, utilizando Python e a biblioteca [Lark](https://github.com/lark-parser/lark).
+
+---
+
+## Preview — Testes rodando
+
+```
+==============================================================
+  ANALISADOR LÉXICO — CUPOM FISCAL ELETRÔNICO
+  Suite de Testes Automatizados
+==============================================================
+
+──────────────────────────────────────────────────────────────
+  Caso 1: Cupom com CNPJ (obrigatório válido 1)
+──────────────────────────────────────────────────────────────
+  [OK] Caso válido 1 — CNPJ, MONEY, DATE, palavras reservadas corretos
+
+       TIPO         LEXEMA                   L   C   INI   FIM
+       ──────────── ────────────────────── ─── ─── ───── ─────
+       ITEM         'ITEM'                   1   1     0     4
+       COLON        ':'                      1   5     4     5
+       STRING       '"Arroz 5kg"'            1   7     6    17
+       QTD          'QTD'                    2   1    18    21
+       INTEGER      '2'                      2   6    23    24
+       VL           'VL'                     4   1    34    36
+       MONEY        'R$ 27,90'               4   5    38    46
+       CNPJ         '12.345.678/0001-90'     5   7    53    71
+       DATA         'DATA'                   6   1    72    76
+       DATE         '28/07/2026'             6   7    78    88
+
+──────────────────────────────────────────────────────────────
+  Caso 4: Caractere "@" inválido (obrigatório inválido 1)
+──────────────────────────────────────────────────────────────
+  [OK] Caso inválido 1 detectado — '@' com linha e coluna
+       Linha  : 1
+       Coluna : 15
+       Char   : '@'
+       Dica   : O símbolo "@" não é válido em cupons fiscais.
+
+──────────────────────────────────────────────────────────────
+  Caso 6: Checklist /i — case-insensitive (ITEM/item/Item/ItEm)
+──────────────────────────────────────────────────────────────
+  [OK] ITEM / item / Item / ItEm → todos reconhecidos como ITEM (flag /i)
+
+──────────────────────────────────────────────────────────────
+  Caso 7: Checklist \b — fronteira de palavra (ITEMIZADO → ID)
+──────────────────────────────────────────────────────────────
+  [OK] ITEMIZADO reconhecido como ID — \b bloqueia match parcial
+
+──────────────────────────────────────────────────────────────
+  Caso 13: Checklist start_pos / end_pos — posições no texto
+──────────────────────────────────────────────────────────────
+  [OK] t.start_pos e t.end_pos corretos para ITEM, COLON e STRING
+
+       TOKEN        LEXEMA          LINHA  COL  START   END
+       ──────────── ─────────────── ───── ──── ────── ─────
+       ITEM         ITEM                1    1      0     4
+       COLON        :                   1    5      4     5
+       STRING       "Arroz"             1    7      6    13
+
+==============================================================
+  TESTES FINALIZADOS
+  15 casos executados
+  15 resultados esperados
+==============================================================
+```
 
 ---
 
